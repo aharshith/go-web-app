@@ -18,7 +18,7 @@ pipeline {
                 script {
                     // Install necessary tools and dependencies in the Docker container
                     sh '''#!/bin/bash
-                        apt-get update && apt-get install -y curl unzip git
+                        sudo apt-get update && sudo apt-get install -y curl unzip git
                     '''
                 }
             }
