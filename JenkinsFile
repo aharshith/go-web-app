@@ -29,7 +29,7 @@ pipeline {
                         -Dsonar.projectKey=go-web-app \
                         -Dsonar.sources=. \
                         -Dsonar.host.url=${SONAR_URL} \
-                        -Dsonar.login=\${SONAR_AUTH_TOKEN} \
+                        -Dsonar.login=\$SONAR_AUTH_TOKEN \
                         -Dsonar.language=go
                 """
             }
