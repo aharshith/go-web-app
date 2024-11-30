@@ -2,8 +2,7 @@ pipeline {
     agent any
 
     environment {
-        SONAR_SCANNER_HOME = '/opt/sonar-scanner'
-        SONAR_SCANNER_BIN = "${SONAR_SCANNER_HOME}/bin"
+        // Add any necessary environment variables here, if any
     }
 
     stages {
@@ -13,25 +12,12 @@ pipeline {
             }
         }
 
-        stage('Install Dependencies') {
-            steps {
-                script {
-                    // Install necessary tools and dependencies in the Docker container
-                    sh '''#!/bin/bash
-                        sudo apt-get update && sudo apt-get install -y curl unzip git
-                    '''
-                }
-            }
-        }
-
         stage('Install Sonar Scanner') {
             steps {
                 script {
-                    // Download and install Sonar Scanner
+                    // Install Sonar Scanner without sudo (if already installed globally, skip this)
                     sh '''#!/bin/bash
-                        curl -sSLo sonarscanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.7.0.2747-linux.zip
-                        unzip -o sonarscanner.zip -d /opt
-                        export PATH=$PATH:/opt/sonar-scanner-4.7.0.2747-linux/bin
+                        curl -sS https://get.sonarsource.com/sonarscanner-cli/linux | bash
                     '''
                 }
             }
@@ -40,10 +26,9 @@ pipeline {
         stage('Build Golang Application') {
             steps {
                 script {
-                    // Install Go dependencies and build the application
+                    // Build your Go application
                     sh '''#!/bin/bash
-                        go mod tidy
-                        go build -o app -buildvcs=false
+                        go build -o myapp main.go
                     '''
                 }
             }
@@ -51,13 +36,11 @@ pipeline {
 
         stage('Static Code Analysis') {
             steps {
-                withCredentials([string(credentialsId: 'sonar-auth-token', variable: 'SONAR_AUTH_TOKEN')]) {
-                    script {
-                        // Run Sonar Scanner for code analysis
-                        sh '''#!/bin/bash
-                            sonar-scanner -Dsonar.login=$SONAR_AUTH_TOKEN -Dsonar.host.url=http://10.0.2.15:9000 -Dsonar.sources=. -Dsonar.language=go
-                        '''
-                    }
+                script {
+                    // Run SonarQube scanner
+                    sh '''#!/bin/bash
+                        sonar-scanner
+                    '''
                 }
             }
         }
@@ -65,10 +48,10 @@ pipeline {
         stage('Build and Push Docker Image') {
             steps {
                 script {
-                    // Docker build and push logic goes here
+                    // Build and push Docker image
                     sh '''#!/bin/bash
-                        docker build -t my-go-web-app .
-                        docker push my-go-web-app
+                        docker build -t myapp .
+                        docker push myapp
                     '''
                 }
             }
@@ -77,9 +60,9 @@ pipeline {
         stage('Update Deployment File') {
             steps {
                 script {
-                    // Update deployment file logic
+                    // Update deployment file (e.g., Kubernetes, Docker Compose)
                     sh '''#!/bin/bash
-                        sed -i 's/old-value/new-value/' deployment.yaml
+                        kubectl apply -f deployment.yaml
                     '''
                 }
             }
@@ -88,7 +71,7 @@ pipeline {
 
     post {
         always {
-            cleanWs()  // Clean workspace after pipeline completion
+            cleanWs()  // Clean up the workspace after the build
         }
     }
 }
