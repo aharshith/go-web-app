@@ -1,8 +1,8 @@
 pipeline {
   agent {
     docker {
-      image 'golang:1.19'  // Switch to the golang image with Go and necessary tools
-      args '--user root -v /var/run/docker.sock:/var/run/docker.sock'  // Mount Docker socket for Docker inside container
+      image 'golang:1.19'
+      args '--user root -v /var/run/docker.sock:/var/run/docker.sock'
     }
   }
 
@@ -18,6 +18,18 @@ pipeline {
     stage('Checkout') {
       steps {
         checkout scm
+      }
+    }
+
+    stage('Install Go and Dependencies') {
+      steps {
+        script {
+          sh '''
+            apt-get update
+            apt-get install -y git
+            curl -LO https://golang.org/dl/go1.19.4.linux-amd64.tar.gz
+          '''
+        }
       }
     }
 
