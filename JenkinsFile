@@ -22,15 +22,17 @@ pipeline {
       steps {
         withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_AUTH_TOKEN')]) {
           // Use the official SonarScanner CLI Docker image to run the analysis
-          docker.image('sonarsource/sonar-scanner-cli').inside {
-            sh """
-              sonar-scanner \
-                -Dsonar.projectKey=go-web-app \
-                -Dsonar.sources=. \
-                -Dsonar.host.url=${SONAR_URL} \
-                -Dsonar.login=\$SONAR_AUTH_TOKEN \
-                -Dsonar.language=go
-            """
+          script {
+            docker.image('sonarsource/sonar-scanner-cli').inside {
+              sh """
+                sonar-scanner \
+                  -Dsonar.projectKey=go-web-app \
+                  -Dsonar.sources=. \
+                  -Dsonar.host.url=${SONAR_URL} \
+                  -Dsonar.login=\$SONAR_AUTH_TOKEN \
+                  -Dsonar.language=go
+              """
+            }
           }
         }
       }
