@@ -1,0 +1,76 @@
+pipeline {
+  agent {
+    docker {
+      image 'golang'
+      args '--user root -v /var/run/docker.sock:/var/run/docker.sock' // mount Docker socket to access the host's Docker daemon
+    }
+  }
+  stages {
+    stage('Build Golang Application') {
+      steps {
+        script {
+                    // Run Go build
+          sh 'go mod tidy' // Fetch dependencies
+          sh 'go build -o app' // Build the Golang application
+          }
+        }
+    }
+    stage('Static Code Analysis') {
+      environment {
+        SONAR_URL = "http://10.0.2.15:9000"
+      }
+      steps {
+        withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_AUTH_TOKEN')]) {
+          script {
+                // Run SonarScanner for Go
+                sh """
+                    sonar-scanner \
+                        -Dsonar.projectKey=go-web-app \
+                        -Dsonar.sources=. \
+                        -Dsonar.host.url=${SONAR_URL} \
+                        -Dsonar.login=${SONAR_AUTH_TOKEN} \
+                        -Dsonar.language=go
+                """
+            }
+        }
+      }
+    } // <-- Missing closing brace for the Static Code Analysis stage
+
+    stage('Build and Push Docker Image') {
+      environment {
+        DOCKER_IMAGE = "aharshith/go-web-app:${BUILD_NUMBER}"
+        REGISTRY_CREDENTIALS = credentials('docker-cred')
+      }
+      steps {
+        script {
+          sh 'docker build -t ${DOCKER_IMAGE} .'
+          def dockerImage = docker.image("${DOCKER_IMAGE}")
+          docker.withRegistry('https://index.docker.io/v1/', "docker-cred") {
+              dockerImage.push()
+            }
+        }
+      }
+    }
+
+    stage('Update Deployment File') {
+        environment {
+            GIT_REPO_NAME = "go-web-app"
+            GIT_USER_NAME = "aharshith"
+        }
+        steps {
+            withCredentials([string(credentialsId: 'github', variable: 'GITHUB_TOKEN')]) {
+                sh '''
+                    git config user.email "aharshith23@gmail.com"
+                    git config user.name "aharshith"
+                    BUILD_NUMBER=${BUILD_NUMBER}
+                    sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" k8s/manifests/deployment.yaml
+                    git add k8s/manifests/deployment.yaml
+                    git commit -m "Update deployment image to version ${BUILD_NUMBER}"
+                    git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME} HEAD:main
+                '''
+            }
+        }
+    }
+  }
+}
+
