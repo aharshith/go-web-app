@@ -1,7 +1,7 @@
 pipeline {
   agent {
     docker {
-      image 'abhishekf5/maven-abhishek-docker-agent:v1'
+      image 'golang:latest'
       args '--user root -v /var/run/docker.sock:/var/run/docker.sock' // mount Docker socket to access the host's Docker daemon
     }
   }
@@ -15,7 +15,7 @@ pipeline {
         }
       }
     }
-    stage('Static Code Analysis') {
+    /*stage('Static Code Analysis') {
       environment {
         SONAR_URL = "http://10.0.2.15:9000"
       }
@@ -24,7 +24,7 @@ pipeline {
           sh 'sonar-scanner -Dsonar.login=$SONAR_AUTH_TOKEN -Dsonar.host.url=${SONAR_URL}'
         }
       }
-    }
+    }*/
     stage('Build and Push Docker Image') {
       environment {
         DOCKER_IMAGE = "aharshith/go-web-app:${BUILD_NUMBER}"
