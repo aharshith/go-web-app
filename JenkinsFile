@@ -1,6 +1,11 @@
 pipeline {
     agent any
 
+    environment {
+        GO_PATH = '/usr/local/go'  // Adjust to your Go installation path if needed
+        PATH = "${env.GO_PATH}/bin:${env.PATH}"
+    }
+
     stages {
         stage('Checkout SCM') {
             steps {
@@ -22,8 +27,10 @@ pipeline {
         stage('Build Golang Application') {
             steps {
                 script {
-                    // Build your Go application
+                    // Ensure Go is installed and in the PATH
                     sh '''#!/bin/bash
+                        echo "Go version:"
+                        go version
                         go build -o myapp main.go
                     '''
                 }
