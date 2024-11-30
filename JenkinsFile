@@ -1,11 +1,6 @@
 pipeline {
     agent any
 
-    environment {
-        GO_PATH = '/usr/local/go'  // Adjust to your Go installation path if needed
-        PATH = "${env.GO_PATH}/bin:${env.PATH}"
-    }
-
     stages {
         stage('Checkout SCM') {
             steps {
@@ -16,65 +11,26 @@ pipeline {
         stage('Install Sonar Scanner') {
             steps {
                 script {
-                    // Install Sonar Scanner without sudo (if already installed globally, skip this)
-                    sh '''#!/bin/bash
-                        curl -sS https://get.sonarsource.com/sonarscanner-cli/linux | bash
-                    '''
-                }
-            }
-        }
-
-        stage('Build Golang Application') {
-            steps {
-                script {
-                    // Ensure Go is installed and in the PATH
-                    sh '''#!/bin/bash
-                        echo "Go version:"
-                        go version
-                        go build -o myapp main.go
-                    '''
+                    // Install Sonar Scanner if not already installed
+                    sh 'curl -sS https://get.sonarsource.com/sonar-scanner.sh | bash'
+                    sh 'export SONAR_SCANNER_HOME=$HOME/sonar-scanner'
                 }
             }
         }
 
         stage('Static Code Analysis') {
             steps {
-                script {
-                    // Run SonarQube scanner
-                    sh '''#!/bin/bash
-                        sonar-scanner
-                    '''
+                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                    script {
+                        sh """
+                            $SONAR_SCANNER_HOME/bin/sonar-scanner \
+                            -Dsonar.projectKey=your_project_key \
+                            -Dsonar.sources=. \
+                            -Dsonar.login=$SONAR_TOKEN
+                        """
+                    }
                 }
             }
-        }
-
-        stage('Build and Push Docker Image') {
-            steps {
-                script {
-                    // Build and push Docker image
-                    sh '''#!/bin/bash
-                        docker build -t myapp .
-                        docker push myapp
-                    '''
-                }
-            }
-        }
-
-        stage('Update Deployment File') {
-            steps {
-                script {
-                    // Update deployment file (e.g., Kubernetes, Docker Compose)
-                    sh '''#!/bin/bash
-                        kubectl apply -f deployment.yaml
-                    '''
-                }
-            }
-        }
-    }
-
-    post {
-        always {
-            cleanWs()  // Clean up the workspace after the build
         }
     }
 }
