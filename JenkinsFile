@@ -21,18 +21,8 @@ pipeline {
       }
       steps {
         withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_AUTH_TOKEN')]) {
-          sh '-Dsonar.login=$SONAR_AUTH_TOKEN -Dsonar.host.url=${SONAR_URL}'
-          script {
-                // Run SonarScanner for Go
-                sh """
-                    sonar-scanner \
-                        -Dsonar.projectKey=go-web-app \
-                        -Dsonar.sources=. \
-                        -Dsonar.host.url=${SONAR_URL} \
-                        -Dsonar.login=\$SONAR_AUTH_TOKEN \
-                        -Dsonar.language=go
-                """
-            }
+          sh 'sonar-scanner -Dsonar.login=$SONAR_AUTH_TOKEN -Dsonar.host.url=${SONAR_URL}'
+          
         }
       }
     } // <-- Missing closing brace for the Static Code Analysis stage
