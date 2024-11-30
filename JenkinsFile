@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    environment {
+        SONAR_SCANNER_HOME = '/var/lib/jenkins/sonar-scanner'  // Define SONAR_SCANNER_HOME here
+    }
+
     stages {
         stage('Checkout SCM') {
             steps {
@@ -11,16 +15,16 @@ pipeline {
         stage('Install Sonar Scanner') {
             steps {
                 script {
-                    // Install Sonar Scanner if not already installed
+                    // This step may be unnecessary if the scanner is already installed at /var/lib/jenkins/sonar-scanner
                     sh 'curl -sS https://get.sonarsource.com/sonar-scanner.sh | bash'
-                    sh 'export SONAR_SCANNER_HOME=$HOME/sonar-scanner'
+                    sh 'export SONAR_SCANNER_HOME=/var/lib/jenkins/sonar-scanner'
                 }
             }
         }
 
         stage('Static Code Analysis') {
             steps {
-                withCredentials([string(credentialsId: 'go-web-app', variable: 'SONAR_TOKEN')]) {
+                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
                     script {
                         sh """
                             $SONAR_SCANNER_HOME/bin/sonar-scanner \
