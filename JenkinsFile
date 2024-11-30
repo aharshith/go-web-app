@@ -12,12 +12,12 @@ pipeline {
                 checkout scm
             }
         }
-        
+
         stage('Install Dependencies') {
             steps {
                 script {
                     // Install necessary tools and dependencies in the Docker container
-                    sh '''
+                    sh '''#!/bin/bash
                         apt-get update && apt-get install -y curl unzip git
                     '''
                 }
@@ -28,7 +28,7 @@ pipeline {
             steps {
                 script {
                     // Download and install Sonar Scanner
-                    sh '''
+                    sh '''#!/bin/bash
                         curl -sSLo sonarscanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.7.0.2747-linux.zip
                         unzip -o sonarscanner.zip -d /opt
                         export PATH=$PATH:/opt/sonar-scanner-4.7.0.2747-linux/bin
@@ -41,7 +41,7 @@ pipeline {
             steps {
                 script {
                     // Install Go dependencies and build the application
-                    sh '''
+                    sh '''#!/bin/bash
                         go mod tidy
                         go build -o app -buildvcs=false
                     '''
@@ -54,7 +54,7 @@ pipeline {
                 withCredentials([string(credentialsId: 'sonar-auth-token', variable: 'SONAR_AUTH_TOKEN')]) {
                     script {
                         // Run Sonar Scanner for code analysis
-                        sh '''
+                        sh '''#!/bin/bash
                             sonar-scanner -Dsonar.login=$SONAR_AUTH_TOKEN -Dsonar.host.url=http://10.0.2.15:9000 -Dsonar.sources=. -Dsonar.language=go
                         '''
                     }
@@ -66,6 +66,10 @@ pipeline {
             steps {
                 script {
                     // Docker build and push logic goes here
+                    sh '''#!/bin/bash
+                        docker build -t my-go-web-app .
+                        docker push my-go-web-app
+                    '''
                 }
             }
         }
@@ -74,6 +78,9 @@ pipeline {
             steps {
                 script {
                     // Update deployment file logic
+                    sh '''#!/bin/bash
+                        sed -i 's/old-value/new-value/' deployment.yaml
+                    '''
                 }
             }
         }
