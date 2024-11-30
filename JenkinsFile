@@ -11,7 +11,7 @@ pipeline {
         script {
                     // Run Go build
           sh 'go mod tidy' // Fetch dependencies
-          sh 'go build -o app' // Build the Golang application
+          sh 'go build -o app -buildvcs=false' // Build the Golang application
           }
         }
     }
